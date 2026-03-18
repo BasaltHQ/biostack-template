@@ -3,11 +3,7 @@ import mongoose from "mongoose";
 const MONGODB_URI = process.env.DATABASE_URL;
 const DB_NAME = process.env.DB_NAME || "biostack";
 
-if (!MONGODB_URI) {
-  throw new Error(
-    "Please define the DATABASE_URL environment variable inside .env.local"
-  );
-}
+// DATABASE_URL validation moved inside connectToDatabase to prevent build errors
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
@@ -21,6 +17,12 @@ if (!cached) {
 }
 
 async function connectToDatabase() {
+  if (!MONGODB_URI) {
+    throw new Error(
+      "Please define the DATABASE_URL environment variable inside .env.local"
+    );
+  }
+
   if (cached.conn) {
     return cached.conn;
   }

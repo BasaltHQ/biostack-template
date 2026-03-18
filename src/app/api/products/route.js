@@ -27,7 +27,11 @@ export async function GET() {
     } catch (error) {
         console.error("Error fetching Surge inventory:", error);
         return NextResponse.json(
-            { success: false, error: "Failed to fetch inventory" },
+            { 
+                success: false, 
+                error: "Failed to fetch inventory",
+                message: error.message
+            },
             { status: 500 }
         );
     }

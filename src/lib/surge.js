@@ -5,6 +5,10 @@ const SURGE_BASE = "https://surge.basalthq.com";
 const SURGE_KEY = process.env.SURGE_API_KEY;
 const MERCHANT_WALLET = process.env.SURGE_MERCHANT_WALLET;
 
+if (!SURGE_KEY) {
+    console.error("[Surge] CRITICAL: SURGE_API_KEY is missing from environment.");
+}
+
 async function surgeRequest(path, options = {}) {
     const { method = "GET", body } = options;
 
@@ -29,8 +33,15 @@ async function surgeRequest(path, options = {}) {
     }
 
     if (!res.ok) {
+        let errorMessage = `Surge API error: ${res.status}`;
+        if (data && typeof data === 'object' && data.message) {
+            errorMessage += ` - ${data.message}`;
+        } else if (typeof data === 'string') {
+            errorMessage += ` - ${data}`;
+        }
+        
         console.error(`[Surge] ${method} ${path} → ${res.status}:`, data);
-        throw new Error(`Surge API error: ${res.status}`);
+        throw new Error(errorMessage);
     }
 
     return data;
