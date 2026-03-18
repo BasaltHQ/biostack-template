@@ -2,18 +2,24 @@
 // All API calls go server-side only — never expose the key in browser code.
 
 const SURGE_BASE = "https://surge.basalthq.com";
-const SURGE_KEY = process.env.SURGE_API_KEY;
-const MERCHANT_WALLET = process.env.SURGE_MERCHANT_WALLET;
 
-if (!SURGE_KEY) {
-    console.error("[Surge] CRITICAL: SURGE_API_KEY is missing from environment.");
+function getSurgeKey() {
+    const key = process.env.SURGE_API_KEY;
+    if (!key) {
+        throw new Error("[Surge] CRITICAL: SURGE_API_KEY is missing from environment variables.");
+    }
+    return key;
+}
+
+function getMerchantWallet() {
+    return process.env.SURGE_MERCHANT_WALLET;
 }
 
 async function surgeRequest(path, options = {}) {
     const { method = "GET", body } = options;
 
     const headers = {
-        "Ocp-Apim-Subscription-Key": SURGE_KEY,
+        "Ocp-Apim-Subscription-Key": getSurgeKey(),
         "Content-Type": "application/json",
     };
 
@@ -99,7 +105,7 @@ export async function getShopConfig() {
 // Omit forcePortalTheme so the merchant's own shop theme is shown.
 
 export function getPortalUrl(receiptId, options = {}) {
-    const wallet = options.recipient || MERCHANT_WALLET;
+    const wallet = options.recipient || getMerchantWallet();
     const params = new URLSearchParams();
 
     if (wallet) params.set("recipient", wallet);
