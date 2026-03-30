@@ -10,6 +10,11 @@ export default function AdminPanel({ adminEmail, onSignOut }) {
     const [actionResult, setActionResult] = useState({});
     const [activeSubTab, setActiveSubTab] = useState("registrations"); // registrations | clients
 
+    // Client Directory specific state
+    const [clientSearch, setClientSearch] = useState("");
+    const [clientFilter, setClientFilter] = useState("all");
+    const [clientSort, setClientSort] = useState("newest");
+
     useEffect(() => {
         fetchRegistrations();
         fetchClients();
@@ -134,6 +139,28 @@ export default function AdminPanel({ adminEmail, onSignOut }) {
         return `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${colors[status] || ""}`;
     };
 
+    const filteredSortedClients = clients
+        .filter((c) => {
+            if (clientFilter === "reset_req" && !c.passwordResetRequested) return false;
+            if (clientFilter === "reset_active" && !c.passwordResetMode) return false;
+            
+            if (clientSearch) {
+                const searchLower = clientSearch.toLowerCase();
+                return (
+                    (c.name && c.name.toLowerCase().includes(searchLower)) ||
+                    (c.email && c.email.toLowerCase().includes(searchLower))
+                );
+            }
+            return true;
+        })
+        .sort((a, b) => {
+            if (clientSort === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
+            if (clientSort === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
+            if (clientSort === "name_asc") return (a.name || "").localeCompare(b.name || "");
+            if (clientSort === "name_desc") return (b.name || "").localeCompare(a.name || "");
+            return 0;
+        });
+
     return (
         <>
             {/* Admin Header */}
@@ -256,12 +283,44 @@ export default function AdminPanel({ adminEmail, onSignOut }) {
             {/* CLIENTS TAB */}
             {activeSubTab === "clients" && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <div className="text-sm text-slate-500 font-medium mb-4">{clients.length} client{clients.length !== 1 ? "s" : ""}</div>
-                    {clients.length === 0 ? (
-                        <div className="text-center py-12"><p className="text-slate-500">No clients yet.</p></div>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <input
+                            type="text"
+                            placeholder="Search clients by name or email..."
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            className="flex-1 px-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500"
+                        />
+                        <select
+                            value={clientFilter}
+                            onChange={(e) => setClientFilter(e.target.value)}
+                            className="px-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 bg-white"
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="reset_req">Reset Requested</option>
+                            <option value="reset_active">Reset Active</option>
+                        </select>
+                        <select
+                            value={clientSort}
+                            onChange={(e) => setClientSort(e.target.value)}
+                            className="px-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 bg-white"
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="name_asc">Name (A-Z)</option>
+                            <option value="name_desc">Name (Z-A)</option>
+                        </select>
+                    </div>
+                
+                    <div className="text-sm text-slate-500 font-medium mb-4">
+                        Showing {filteredSortedClients.length} of {clients.length} client{clients.length !== 1 ? "s" : ""}
+                    </div>
+                    
+                    {filteredSortedClients.length === 0 ? (
+                        <div className="text-center py-12"><p className="text-slate-500">No clients match your filter.</p></div>
                     ) : (
                         <div className="space-y-3">
-                            {clients.map((c) => (
+                            {filteredSortedClients.map((c) => (
                                 <div key={c._id} className="border border-slate-100 rounded-xl p-5 hover:border-sage-200 transition-colors">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                                         <div>

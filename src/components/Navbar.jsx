@@ -81,7 +81,7 @@ export default function Navbar() {
               href="/portal"
               className="px-5 py-2.5 border border-white/20 rounded text-sm font-bold tracking-wider hover:bg-white/10 transition-all"
             >
-              LOGIN
+              {isLoggedIn ? "PORTAL" : "LOGIN"}
             </Link>
             <Link
               href="/#contact"
@@ -123,7 +123,7 @@ export default function Navbar() {
               onClick={closeMenu}
               className="w-full py-5 border-2 border-white/20 rounded-full text-xl font-bold text-center text-white tracking-widest uppercase hover:bg-white/10 transition-all"
             >
-              LOGIN
+              {isLoggedIn ? "PORTAL" : "LOGIN"}
             </Link>
             <Link
               href="/#contact"
