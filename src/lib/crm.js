@@ -48,7 +48,7 @@ async function crmFetch(path, options = {}) {
 
 // ── CONTACTS ──
 // POST /api/v1/contacts — upserts by email
-export async function upsertContact({ email, first_name, last_name, mobile_phone, tags }) {
+export async function upsertContact({ email, first_name, last_name, mobile_phone, office_phone, tags }) {
     return crmFetch("/api/v1/contacts", {
         method: "POST",
         body: {
@@ -56,6 +56,7 @@ export async function upsertContact({ email, first_name, last_name, mobile_phone
             first_name,
             last_name,
             ...(mobile_phone && { mobile_phone }),
+            ...(office_phone && { office_phone }),
             tags: tags || ["ecommerce", "biostack"],
         },
     });
@@ -63,13 +64,31 @@ export async function upsertContact({ email, first_name, last_name, mobile_phone
 
 // ── ACCOUNTS ──
 // POST /api/v1/accounts — upserts by name
-export async function upsertAccount({ name, email, type }) {
+export async function upsertAccount({ name, email, type, website, officePhone, billingAddress, shippingAddress, industry, description }) {
     return crmFetch("/api/v1/accounts", {
         method: "POST",
         body: {
             name,
             email,
             type: type || "Customer",
+            ...(website && { website }),
+            ...(officePhone && { office_phone: officePhone }),
+            ...(industry && { industry }),
+            ...(description && { description }),
+            ...(billingAddress && {
+                billing_address_street: billingAddress.street,
+                billing_address_city: billingAddress.city,
+                billing_address_state: billingAddress.state,
+                billing_address_postalcode: billingAddress.zip,
+                billing_address_country: billingAddress.country,
+            }),
+            ...(shippingAddress && {
+                shipping_address_street: shippingAddress.street,
+                shipping_address_city: shippingAddress.city,
+                shipping_address_state: shippingAddress.state,
+                shipping_address_postalcode: shippingAddress.zip,
+                shipping_address_country: shippingAddress.country,
+            }),
         },
     });
 }

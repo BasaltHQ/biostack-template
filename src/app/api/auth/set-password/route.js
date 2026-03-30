@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Client from "@/models/Client";
 
-// POST — Set password on a passwordless account
+// POST — Set password on a passwordless account OR reset password when in reset mode
 export async function POST(req) {
     try {
         const body = await req.json();
@@ -23,7 +23,11 @@ export async function POST(req) {
             return NextResponse.json({ error: "No account found with this email" }, { status: 404 });
         }
 
-        if (client.password && client.password.length > 10) {
+        // Allow setting password if: no password set OR passwordResetMode is active
+        const hasPassword = client.password && client.password.length > 10;
+        const isResetMode = client.passwordResetMode === true;
+
+        if (hasPassword && !isResetMode) {
             return NextResponse.json({ error: "This account already has a password. Please sign in." }, { status: 409 });
         }
 
@@ -34,16 +38,29 @@ export async function POST(req) {
 
         await Client.updateOne(
             { _id: client._id },
-            { $set: { password: hashed } }
+            {
+                $set: { password: hashed, passwordResetMode: false, passwordResetRequested: false },
+            }
         );
 
         // Re-fetch the client without password for response
         const updated = await Client.findById(client._id);
 
-        return NextResponse.json(
-            { success: true, message: "Password set! You can now sign in.", data: updated },
+        // Set session cookie on successful password set
+        const response = NextResponse.json(
+            { success: true, message: "Password set! You are now signed in.", data: updated },
             { status: 200 }
         );
+
+        response.cookies.set("biostack_session", updated.email, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            maxAge: 60 * 60 * 24 * 7,
+        });
+
+        return response;
     } catch (error) {
         console.error("Error setting password:", error);
         return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });

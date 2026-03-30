@@ -1,14 +1,21 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import AdminPanel from "@/components/AdminPanel";
 
 export default function Portal() {
     // Auth state
-    const [authMode, setAuthMode] = useState("login"); // login | register | setPassword
+    const [authMode, setAuthMode] = useState("login"); // login | setPassword | forgotPassword
+    const [isAdminLogin, setIsAdminLogin] = useState(false);
     const [authEmail, setAuthEmail] = useState("");
     const [authPassword, setAuthPassword] = useState("");
     const [authName, setAuthName] = useState("");
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState("");
+    const [authSuccess, setAuthSuccess] = useState("");
+    const [registrationStatus, setRegistrationStatus] = useState(null); // { status: "pending" | "rejected", message: "" }
+
+    // Admin state
+    const [admin, setAdmin] = useState(null);
 
     // Logged-in state
     const [client, setClient] = useState(null);
@@ -32,6 +39,8 @@ export default function Portal() {
     const [profileForm, setProfileForm] = useState({
         name: "", phone: "", bio: "", dateOfBirth: "",
         address: { street: "", city: "", state: "", zip: "", country: "" },
+        shippingAddress: { street: "", city: "", state: "", zip: "", country: "" },
+        website: "", industry: "",
         goals: [],
     });
     const [savingProfile, setSavingProfile] = useState(false);
@@ -69,11 +78,17 @@ export default function Portal() {
     }, [threadMessages]);
 
     const saveSession = (clientData) => {
-        try { sessionStorage.setItem("portal_session", JSON.stringify(clientData)); } catch { }
+        try {
+            sessionStorage.setItem("portal_session", JSON.stringify(clientData));
+            window.dispatchEvent(new Event("biostack_auth_change"));
+        } catch { }
     };
 
     const clearSession = () => {
-        try { sessionStorage.removeItem("portal_session"); } catch { }
+        try {
+            sessionStorage.removeItem("portal_session");
+            window.dispatchEvent(new Event("biostack_auth_change"));
+        } catch { }
     };
 
     // ── AUTH HANDLERS ──
@@ -81,6 +96,28 @@ export default function Portal() {
         e.preventDefault();
         setAuthLoading(true);
         setAuthError("");
+
+        // Admin login path
+        if (isAdminLogin) {
+            try {
+                const res = await fetch("/api/admin/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: authEmail, password: authPassword }),
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    setAdmin(data.data);
+                } else {
+                    setAuthError(data.error || "Invalid admin credentials");
+                }
+            } catch {
+                setAuthError("Failed to connect to server");
+            } finally {
+                setAuthLoading(false);
+            }
+            return;
+        }
 
         try {
             const res = await fetch("/api/auth/login", {
@@ -99,8 +136,42 @@ export default function Portal() {
                 setAuthMode("setPassword");
                 setAuthPassword("");
                 setAuthError(data.message || "Please set a password to continue.");
+            } else if (data.error === "PASSWORD_RESET") {
+                setAuthMode("setPassword");
+                setAuthPassword("");
+                setAuthError(data.message || "Please set a new password.");
+            } else if (data.error === "REGISTRATION_PENDING") {
+                setRegistrationStatus({ status: "pending", message: data.message });
+                setAuthPassword("");
+            } else if (data.error === "REGISTRATION_REJECTED") {
+                setRegistrationStatus({ status: "rejected", message: data.message });
+                setAuthPassword("");
             } else {
                 setAuthError(data.error || "Login failed");
+            }
+        } catch {
+            setAuthError("Failed to connect to server");
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setAuthLoading(true);
+        setAuthError("");
+        setAuthSuccess("");
+        try {
+            const res = await fetch("/api/auth/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: authEmail }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAuthSuccess(data.message);
+            } else {
+                setAuthError(data.error || "Failed to submit request");
             }
         } catch {
             setAuthError("Failed to connect to server");
@@ -166,16 +237,20 @@ export default function Portal() {
         }
     };
 
-    const handleSignOut = () => {
+    const handleSignOut = async () => {
+        try { await fetch("/api/auth/logout", { method: "POST" }); } catch { }
         setClient(null);
+        setAdmin(null);
         setOrders(null);
         setAuthEmail("");
         setAuthPassword("");
         setAuthName("");
         setAuthError("");
+        setAuthSuccess("");
         setActiveTab("orders");
         setEditMode(false);
         setAuthMode("login");
+        setIsAdminLogin(false);
         clearSession();
     };
 
@@ -293,6 +368,9 @@ export default function Portal() {
             bio: clientData.bio || "",
             dateOfBirth: clientData.dateOfBirth || "",
             address: clientData.address || { street: "", city: "", state: "", zip: "", country: "" },
+            shippingAddress: clientData.shippingAddress || { street: "", city: "", state: "", zip: "", country: "" },
+            website: clientData.website || "",
+            industry: clientData.industry || "",
             goals: clientData.goals || [],
         });
     };
@@ -338,6 +416,9 @@ export default function Portal() {
                     bio: profileForm.bio,
                     dateOfBirth: profileForm.dateOfBirth,
                     address: profileForm.address,
+                    shippingAddress: profileForm.shippingAddress,
+                    website: profileForm.website,
+                    industry: profileForm.industry,
                     goals: profileForm.goals,
                     avatar: client?.avatar || "",
                 }),
@@ -399,6 +480,7 @@ export default function Portal() {
         .split(" ").map((w) => w[0]).join("").substring(0, 2).toUpperCase();
 
     const isLoggedIn = client !== null;
+    const isAdminLoggedIn = admin !== null;
 
     return (
         <main className="min-h-screen bg-sage-50 pt-32 pb-24 px-6">
@@ -411,34 +493,73 @@ export default function Portal() {
                 {/* Header */}
                 <div className="text-center mb-12">
                     <div className="inline-block px-3 py-1 bg-sage-100 text-sage-800 rounded-full text-sm font-bold mb-6 tracking-wider uppercase">
-                        Client Portal
+                        {isAdminLoggedIn ? "Admin Panel" : "Client Portal"}
                     </div>
                     <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-                        {isLoggedIn ? (
+                        {isAdminLoggedIn ? (
+                            <>Client <span className="text-sage-600">Directory</span></>
+                        ) : isLoggedIn ? (
                             <>Welcome back, <span className="text-sage-600">{profileForm.name.split(" ")[0] || "Client"}</span></>
                         ) : (
                             <>Your <span className="text-sage-600">Dashboard</span></>
                         )}
                     </h1>
                     <p className="text-slate-600 max-w-xl mx-auto text-lg">
-                        {isLoggedIn ? "Manage your orders and profile" : "Sign in to view your orders and manage your profile."}
+                        {isAdminLoggedIn ? "Manage registrations, clients, and CRM sync" : isLoggedIn ? "Manage your orders and profile" : "Sign in to view your orders and manage your profile."}
                     </p>
                 </div>
 
                 {/* ── AUTH FORMS ── */}
-                {!isLoggedIn && (
+                {/* ── ADMIN PANEL ── */}
+                {isAdminLoggedIn && (
+                    <AdminPanel adminEmail={admin.email} onSignOut={handleSignOut} />
+                )}
+
+                {/* ── REGISTRATION STATUS MODAL ── */}
+                {registrationStatus && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-100 transform transition-all">
+                            <div className="text-center">
+                                <div className={`w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center ${registrationStatus.status === "pending" ? "bg-amber-50" : "bg-red-50"}`}>
+                                    {registrationStatus.status === "pending" ? (
+                                        <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    ) : (
+                                        <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                    )}
+                                </div>
+                                <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                                    {registrationStatus.status === "pending" ? "Application Pending" : "Application Not Approved"}
+                                </h3>
+                                <p className="text-slate-600 mb-8 leading-relaxed">
+                                    {registrationStatus.message}
+                                </p>
+                                <button
+                                    onClick={() => setRegistrationStatus(null)}
+                                    className="w-full py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── AUTH FORMS ── */}
+                {!isLoggedIn && !isAdminLoggedIn && (
                     <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 max-w-md mx-auto border border-slate-100">
-                        {/* Sign In Header (hidden when in set-password mode) */}
-                        {authMode !== "setPassword" && (
+                        {/* Sign In Header (hidden when in set-password/forgot mode) */}
+                        {authMode === "login" && (
                             <div className="text-center mb-8">
                                 <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-sage-50 flex items-center justify-center">
                                     <svg className="w-7 h-7 text-sage-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-1">Client Login</h3>
-                                <p className="text-slate-500 text-sm">Sign in to view your orders and manage your profile.</p>
-                                <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-                                    <p className="text-blue-700 text-xs font-medium">This portal is available to clients with existing purchases. Your account is created automatically at checkout.</p>
-                                </div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-1">{isAdminLogin ? "Admin Login" : "Client Login"}</h3>
+                                <p className="text-slate-500 text-sm">{isAdminLogin ? "Sign in to manage registrations and clients." : "Sign in to view your orders and manage your profile."}</p>
+                                {!isAdminLogin && (
+                                    <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+                                        <p className="text-blue-700 text-xs font-medium">New here? <a href="/register" className="underline font-bold">Register for an account</a> and wait for admin approval.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -459,6 +580,41 @@ export default function Portal() {
                             </div>
                         )}
 
+                        {authSuccess && (
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-6">
+                                <p className="text-emerald-700 text-sm text-center font-medium">{authSuccess}</p>
+                            </div>
+                        )}
+
+                        {/* Forgot Password Form */}
+                        {authMode === "forgotPassword" && (
+                            <>
+                                <div className="text-center mb-6">
+                                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-50 flex items-center justify-center">
+                                        <svg className="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-1">Forgot Password</h3>
+                                    <p className="text-slate-500 text-sm">Enter your email and we&apos;ll submit a reset request to your administrator.</p>
+                                </div>
+                                <form onSubmit={handleForgotPassword} className="space-y-5">
+                                    <div>
+                                        <label className="portal-label">Email Address</label>
+                                        <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-sage-500 focus:bg-white focus:ring-2 focus:ring-sage-200 outline-none transition-all text-slate-900" placeholder="your@email.com" />
+                                    </div>
+                                    <button type="submit" disabled={authLoading}
+                                        className="w-full py-3.5 bg-sage-600 text-white font-bold rounded-xl hover:bg-sage-500 transition-all duration-300 shadow-lg disabled:opacity-50 tracking-wide text-sm">
+                                        {authLoading ? "Submitting..." : "Request Password Reset"}
+                                    </button>
+                                </form>
+                                <p className="text-slate-500 text-xs text-center mt-6">
+                                    <button onClick={() => { setAuthMode("login"); setAuthError(""); setAuthSuccess(""); }} className="text-sage-600 font-bold hover:text-sage-700">&larr; Back to Sign In</button>
+                                </p>
+                            </>
+                        )}
+
+                        {authMode !== "forgotPassword" && (
+                        <>
                         <form onSubmit={authMode === "login" ? handleLogin : handleSetPassword} className="space-y-5">
                             <div>
                                 <label className="portal-label">Email Address</label>
@@ -495,11 +651,23 @@ export default function Portal() {
                             </button>
                         </form>
 
-                        <p className="text-slate-500 text-xs text-center mt-6">
+                        <div className="text-center mt-6 space-y-3">
                             {authMode === "setPassword" && (
-                                <button onClick={() => { setAuthMode("login"); setAuthError(""); setAuthPassword(""); }} className="text-sage-600 font-bold hover:text-sage-700">← Back to Sign In</button>
+                                <p><button onClick={() => { setAuthMode("login"); setAuthError(""); setAuthPassword(""); }} className="text-sage-600 font-bold hover:text-sage-700 text-xs">← Back to Sign In</button></p>
                             )}
-                        </p>
+                            {authMode === "login" && (
+                                <>
+                                    <p><button onClick={() => { setAuthMode("forgotPassword"); setAuthError(""); setAuthSuccess(""); }} className="text-slate-400 hover:text-slate-600 text-xs transition-colors">Forgot your password?</button></p>
+                                    <div className="pt-3 border-t border-slate-100">
+                                        <button onClick={() => { setIsAdminLogin(!isAdminLogin); setAuthError(""); }} className="text-slate-400 hover:text-slate-600 text-xs transition-colors">
+                                            {isAdminLogin ? "← Client Login" : "Admin Login →"}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        </>
+                        )}
                     </div>
                 )}
 
@@ -690,15 +858,39 @@ export default function Portal() {
                                                 <p className="text-slate-900 font-medium">{profileForm.dateOfBirth || "—"}</p>
                                             </div>
                                         </div>
-                                        <div className="bg-slate-50 rounded-xl border border-slate-100 p-5">
-                                            <label className="text-xs text-slate-500 uppercase tracking-wider font-bold block mb-1">Bio</label>
-                                            <p className="text-slate-600">{profileForm.bio || "No bio yet."}</p>
+                                        <div className="grid md:grid-cols-2 gap-5">
+                                            <div className="bg-slate-50 rounded-xl border border-slate-100 p-5">
+                                                <label className="text-xs text-slate-500 uppercase tracking-wider font-bold block mb-1">Billing Address</label>
+                                                <p className="text-slate-600">
+                                                    {[profileForm.address?.street, profileForm.address?.city, profileForm.address?.state, profileForm.address?.zip, profileForm.address?.country].filter(Boolean).join(", ") || "—"}
+                                                </p>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-xl border border-slate-100 p-5">
+                                                <label className="text-xs text-slate-500 uppercase tracking-wider font-bold block mb-1">Shipping Address</label>
+                                                <p className="text-slate-600">
+                                                    {[profileForm.shippingAddress?.street, profileForm.shippingAddress?.city, profileForm.shippingAddress?.state, profileForm.shippingAddress?.zip, profileForm.shippingAddress?.country].filter(Boolean).join(", ") || "—"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-5">
+                                            <div className="bg-slate-50 rounded-xl border border-slate-100 p-5">
+                                                <label className="text-xs text-slate-500 uppercase tracking-wider font-bold block mb-1">Industry</label>
+                                                <p className="text-slate-900 font-medium">{profileForm.industry || "—"}</p>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-xl border border-slate-100 p-5">
+                                                <label className="text-xs text-slate-500 uppercase tracking-wider font-bold block mb-1">Website</label>
+                                                {profileForm.website ? (
+                                                    <a href={profileForm.website.startsWith('http') ? profileForm.website : `https://${profileForm.website}`} target="_blank" rel="noopener noreferrer" className="text-sage-600 hover:text-sage-700 font-medium break-all">
+                                                        {profileForm.website}
+                                                    </a>
+                                                ) : (
+                                                    <p className="text-slate-900 font-medium">—</p>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="bg-slate-50 rounded-xl border border-slate-100 p-5">
-                                            <label className="text-xs text-slate-500 uppercase tracking-wider font-bold block mb-1">Address</label>
-                                            <p className="text-slate-600">
-                                                {[profileForm.address?.street, profileForm.address?.city, profileForm.address?.state, profileForm.address?.zip, profileForm.address?.country].filter(Boolean).join(", ") || "—"}
-                                            </p>
+                                            <label className="text-xs text-slate-500 uppercase tracking-wider font-bold block mb-1">Bio / Description</label>
+                                            <p className="text-slate-600">{profileForm.bio || "No bio yet."}</p>
                                         </div>
                                         {profileForm.goals?.length > 0 && (
                                             <div className="bg-slate-50 rounded-xl border border-slate-100 p-5">
@@ -725,9 +917,13 @@ export default function Portal() {
                                             <div><label className="portal-label">Phone</label><input type="tel" value={profileForm.phone} onChange={handlePhoneChange} className="portal-input" placeholder="+1 (555) 000-0000" /></div>
                                         </div>
                                         <div><label className="portal-label">Date of Birth</label><input type="date" value={profileForm.dateOfBirth} onChange={(e) => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })} className="portal-input" /></div>
-                                        <div><label className="portal-label">Bio</label><textarea rows="3" value={profileForm.bio} onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })} className="portal-input resize-none" placeholder="Tell us about yourself..." /></div>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div><label className="portal-label">Industry</label><input type="text" value={profileForm.industry} onChange={(e) => setProfileForm({ ...profileForm, industry: e.target.value })} className="portal-input" placeholder="e.g. Healthcare, Wellness" /></div>
+                                            <div><label className="portal-label">Website</label><input type="url" value={profileForm.website} onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })} className="portal-input" placeholder="https://example.com" /></div>
+                                        </div>
+                                        <div><label className="portal-label">Bio / Description</label><textarea rows="3" value={profileForm.bio} onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })} className="portal-input resize-none" placeholder="Tell us about yourself or your practice..." /></div>
                                         <div>
-                                            <label className="portal-label">Address</label>
+                                            <label className="portal-label">Billing Address</label>
                                             <div className="space-y-3">
                                                 <input type="text" value={profileForm.address.street} onChange={(e) => setProfileForm({ ...profileForm, address: { ...profileForm.address, street: e.target.value } })} className="portal-input" placeholder="Street address" />
                                                 <div className="grid grid-cols-2 gap-3">
@@ -737,6 +933,20 @@ export default function Portal() {
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <input type="text" value={profileForm.address.zip} onChange={(e) => setProfileForm({ ...profileForm, address: { ...profileForm.address, zip: e.target.value } })} className="portal-input" placeholder="ZIP Code" />
                                                     <input type="text" value={profileForm.address.country} onChange={(e) => setProfileForm({ ...profileForm, address: { ...profileForm.address, country: e.target.value } })} className="portal-input" placeholder="Country" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="portal-label">Shipping Address</label>
+                                            <div className="space-y-3">
+                                                <input type="text" value={profileForm.shippingAddress.street} onChange={(e) => setProfileForm({ ...profileForm, shippingAddress: { ...profileForm.shippingAddress, street: e.target.value } })} className="portal-input" placeholder="Street address" />
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input type="text" value={profileForm.shippingAddress.city} onChange={(e) => setProfileForm({ ...profileForm, shippingAddress: { ...profileForm.shippingAddress, city: e.target.value } })} className="portal-input" placeholder="City" />
+                                                    <input type="text" value={profileForm.shippingAddress.state} onChange={(e) => setProfileForm({ ...profileForm, shippingAddress: { ...profileForm.shippingAddress, state: e.target.value } })} className="portal-input" placeholder="State" />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input type="text" value={profileForm.shippingAddress.zip} onChange={(e) => setProfileForm({ ...profileForm, shippingAddress: { ...profileForm.shippingAddress, zip: e.target.value } })} className="portal-input" placeholder="ZIP Code" />
+                                                    <input type="text" value={profileForm.shippingAddress.country} onChange={(e) => setProfileForm({ ...profileForm, shippingAddress: { ...profileForm.shippingAddress, country: e.target.value } })} className="portal-input" placeholder="Country" />
                                                 </div>
                                             </div>
                                         </div>

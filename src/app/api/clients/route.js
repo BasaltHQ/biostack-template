@@ -30,7 +30,7 @@ export async function GET(req) {
 export async function POST(req) {
     try {
         const body = await req.json();
-        const { email, name, phone, avatar, bio, address, dateOfBirth, goals } = body;
+        const { email, name, phone, avatar, bio, address, shippingAddress, website, industry, dateOfBirth, goals } = body;
 
         if (!email || !name) {
             return NextResponse.json({ error: "Email and name are required" }, { status: 400 });
@@ -43,6 +43,9 @@ export async function POST(req) {
         if (avatar !== undefined) updateData.avatar = avatar;
         if (bio !== undefined) updateData.bio = bio;
         if (address !== undefined) updateData.address = address;
+        if (shippingAddress !== undefined) updateData.shippingAddress = shippingAddress;
+        if (website !== undefined) updateData.website = website;
+        if (industry !== undefined) updateData.industry = industry;
         if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
         if (goals !== undefined) updateData.goals = goals;
 

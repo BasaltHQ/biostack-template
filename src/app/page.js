@@ -68,8 +68,8 @@ export default function Home() {
             Your pathway to wellness begins here. Personalized coaching with your designated health & wellness coach.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-6">
-            <Link href="/shop" className="bg-sage-600 text-white border-2 border-sage-600 px-8 py-4 rounded hover:bg-sage-700 hover:border-sage-700 transition-all duration-300 shadow-xl text-lg font-bold tracking-wide uppercase">
-              BUY NOW
+            <Link href="/register" className="bg-sage-600 text-white border-2 border-sage-600 px-8 py-4 rounded hover:bg-sage-700 hover:border-sage-700 transition-all duration-300 shadow-xl text-lg font-bold tracking-wide uppercase">
+              GET STARTED
             </Link>
             <Link href="#services" className="bg-transparent text-white border-2 border-white px-8 py-4 rounded hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-xl text-lg font-bold tracking-wide uppercase">
               Our Services

@@ -21,7 +21,7 @@ export default function Footer() {
             <h4 className="text-sage-400 font-bold mb-4">Navigation</h4>
             <ul className="space-y-2 text-slate-400">
               <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
-              <li><Link href="/shop" className="hover:text-white transition-colors">Shop BioStack</Link></li>
+              <li><Link href="/register" className="hover:text-white transition-colors">Register</Link></li>
               <li><Link href="/#services" className="hover:text-white transition-colors">Services</Link></li>
               <li><Link href="/#reviews" className="hover:text-white transition-colors">Success Stories</Link></li>
               <li><Link href="/#faq" className="hover:text-white transition-colors">FAQs</Link></li>

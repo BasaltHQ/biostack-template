@@ -38,6 +38,21 @@ const ClientSchema = new mongoose.Schema(
             zip: { type: String, default: "" },
             country: { type: String, default: "" },
         },
+        shippingAddress: {
+            street: { type: String, default: "" },
+            city: { type: String, default: "" },
+            state: { type: String, default: "" },
+            zip: { type: String, default: "" },
+            country: { type: String, default: "" },
+        },
+        website: {
+            type: String,
+            default: "",
+        },
+        industry: {
+            type: String,
+            default: "",
+        },
         dateOfBirth: {
             type: String,
             default: "",
@@ -45,6 +60,14 @@ const ClientSchema = new mongoose.Schema(
         goals: {
             type: [String],
             default: [],
+        },
+        passwordResetMode: {
+            type: Boolean,
+            default: false,
+        },
+        passwordResetRequested: {
+            type: Boolean,
+            default: false,
         },
     },
     {
