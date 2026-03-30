@@ -71,12 +71,14 @@ export default function Navbar() {
             <Link href="/#services" className="nav-link text-sm font-medium hover:text-sage-300 transition-colors tracking-wide">SERVICES</Link>
             <Link href="/#faq" className="nav-link text-sm font-medium hover:text-sage-300 transition-colors tracking-wide">FAQ</Link>
             <Link href="/#reviews" className="nav-link text-sm font-medium hover:text-sage-300 transition-colors tracking-wide">REVIEWS</Link>
-            <Link
-              href="/register"
-              className="nav-link text-sm font-medium hover:text-sage-300 transition-colors tracking-wide"
-            >
-              REGISTER
-            </Link>
+            {!isLoggedIn && (
+              <Link
+                href="/register"
+                className="nav-link text-sm font-medium hover:text-sage-300 transition-colors tracking-wide"
+              >
+                REGISTER
+              </Link>
+            )}
             <Link
               href="/portal"
               className="px-5 py-2.5 border border-white/20 rounded text-sm font-bold tracking-wider hover:bg-white/10 transition-all"
@@ -114,7 +116,9 @@ export default function Navbar() {
             <Link href="/#services" onClick={closeMenu} className="text-3xl font-light text-white hover:text-sage-400 transition-colors tracking-widest uppercase">SERVICES</Link>
             <Link href="/#faq" onClick={closeMenu} className="text-3xl font-light text-white hover:text-sage-400 transition-colors tracking-widest uppercase">FAQ</Link>
             <Link href="/#reviews" onClick={closeMenu} className="text-3xl font-light text-white hover:text-sage-400 transition-colors tracking-widest uppercase">REVIEWS</Link>
-            <Link href="/register" onClick={closeMenu} className="text-3xl font-light text-white hover:text-sage-400 transition-colors tracking-widest uppercase">REGISTER</Link>
+            {!isLoggedIn && (
+              <Link href="/register" onClick={closeMenu} className="text-3xl font-light text-white hover:text-sage-400 transition-colors tracking-widest uppercase">REGISTER</Link>
+            )}
           </nav>
 
           <div className="flex flex-col gap-4 w-full max-w-xs">
