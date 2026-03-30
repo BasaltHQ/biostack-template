@@ -185,8 +185,8 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 hover:border-sage-500 transition-colors shadow-2xl relative">
-              <div className="absolute -top-6 left-8 bg-sage-600 h-12 w-12 flex items-center justify-center rounded-lg shadow-lg text-2xl font-serif">"</div>
-              <p className="text-gray-300 mb-6 mt-4 leading-relaxed italic">"Biostack Limitless services have been life-changing. From boosting my immunity to clearing up my skin, their coaching delivered real results. Highly recommend!"</p>
+              <div className="absolute -top-6 left-8 bg-sage-600 h-12 w-12 flex items-center justify-center rounded-lg shadow-lg text-2xl font-serif">&quot;</div>
+              <p className="text-gray-300 mb-6 mt-4 leading-relaxed italic">&quot;Biostack Limitless services have been life-changing. From boosting my immunity to clearing up my skin, their coaching delivered real results. Highly recommend!&quot;</p>
               <div className="border-t border-slate-700 pt-6 flex items-center">
                 <div className="h-10 w-10 bg-gradient-to-br from-sage-400 to-sage-600 rounded-full flex items-center justify-center font-bold text-slate-900">AR</div>
                 <div className="ml-3 text-left">
@@ -197,8 +197,8 @@ export default function Home() {
             </div>
 
             <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 hover:border-sage-500 transition-colors shadow-2xl relative mt-8 md:mt-0">
-              <div className="absolute -top-6 left-8 bg-sage-600 h-12 w-12 flex items-center justify-center rounded-lg shadow-lg text-2xl font-serif">"</div>
-              <p className="text-gray-300 mb-6 mt-4 leading-relaxed italic">"Biostack Limitless products have truly transformed my life. Whether it's enhancing my immunity or rejuvenating my skin, their range consistently delivers tangible results."</p>
+              <div className="absolute -top-6 left-8 bg-sage-600 h-12 w-12 flex items-center justify-center rounded-lg shadow-lg text-2xl font-serif">&quot;</div>
+              <p className="text-gray-300 mb-6 mt-4 leading-relaxed italic">&quot;Biostack Limitless products have truly transformed my life. Whether it&apos;s enhancing my immunity or rejuvenating my skin, their range consistently delivers tangible results.&quot;</p>
               <div className="border-t border-slate-700 pt-6 flex items-center">
                 <div className="h-10 w-10 bg-gradient-to-br from-sage-400 to-sage-600 rounded-full flex items-center justify-center font-bold text-slate-900">BK</div>
                 <div className="ml-3 text-left">
@@ -209,8 +209,8 @@ export default function Home() {
             </div>
 
             <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 hover:border-sage-500 transition-colors shadow-2xl relative mt-8 md:mt-0">
-              <div className="absolute -top-6 left-8 bg-sage-600 h-12 w-12 flex items-center justify-center rounded-lg shadow-lg text-2xl font-serif">"</div>
-              <p className="text-gray-300 mb-6 mt-4 leading-relaxed italic">"Absolutely thrilled with my experience! From bolstering my immune system to achieving clearer, healthier skin, their products have made a significant impact on my well-being."</p>
+              <div className="absolute -top-6 left-8 bg-sage-600 h-12 w-12 flex items-center justify-center rounded-lg shadow-lg text-2xl font-serif">&quot;</div>
+              <p className="text-gray-300 mb-6 mt-4 leading-relaxed italic">&quot;Absolutely thrilled with my experience! From bolstering my immune system to achieving clearer, healthier skin, their products have made a significant impact on my well-being.&quot;</p>
               <div className="border-t border-slate-700 pt-6 flex items-center">
                 <div className="h-10 w-10 bg-gradient-to-br from-sage-400 to-sage-600 rounded-full flex items-center justify-center font-bold text-slate-900">JN</div>
                 <div className="ml-3 text-left">
